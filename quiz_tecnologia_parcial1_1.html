@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tecnología, Humanidades y Modelos Globales — Parcial 1</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap");
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Outfit", sans-serif;
+    font-size: 16px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* TITLE BAR */
+  #titlebar {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    color: #94a3b8;
+  }
+  #titlebar span:first-child { color: #f8fafc; }
+
+  /* STATS BAR */
+  #statsbar {
+    background: rgba(30, 41, 59, 0.8);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  .stat-item { font-size: 15px; display: flex; gap: 8px; align-items: center; }
+  .stat-item span { font-weight: 700; font-size: 16px; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.05); }
+  .stat-item .ok  { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+  .stat-item .bad { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+  .stat-item .pts { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+
+  /* MAIN LAYOUT */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 24px;
+    gap: 24px;
+  }
+
+  /* QUESTION PANEL */
+  #question-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  }
+
+  #question-body {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #question-text {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 32px;
+    color: #f8fafc;
+  }
+  #question-text strong {
+    color: #8b5cf6;
+    margin-right: 8px;
+  }
+
+  .option-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.03);
+    border: 2px solid transparent;
+    border-radius: 1rem;
+    transition: all 0.2s ease;
+  }
+  .option-row:hover {
+    background: rgba(255,255,255,0.08);
+    transform: translateY(-2px);
+  }
+  .option-row input[type=radio] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #8b5cf6;
+    flex-shrink: 0;
+  }
+  .option-row label {
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1.4;
+    color: #e2e8f0;
+    flex: 1;
+  }
+  .option-row.correct { 
+    background: rgba(16, 185, 129, 0.1); 
+    border-color: #10b981; 
+  }
+  .option-row.correct label { color: #34d399; font-weight: 600; }
+  
+  .option-row.wrong { 
+    background: rgba(239, 68, 68, 0.1); 
+    border-color: #ef4444; 
+  }
+  .option-row.wrong label { color: #f87171; font-weight: 600; }
+  
+  .option-row.reveal { 
+    border-color: #10b981; 
+  }
+  .option-row.reveal label { color: #34d399; }
+
+  #feedback-bar {
+    padding: 16px 40px;
+    font-size: 16px;
+    font-weight: 600;
+    min-height: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+  }
+  #feedback-bar.ok   { color: #34d399; background: rgba(16, 185, 129, 0.15); border-top: 1px solid rgba(16, 185, 129, 0.3); }
+  #feedback-bar.fail { color: #f87171; background: rgba(239, 68, 68, 0.15); border-top: 1px solid rgba(239, 68, 68, 0.3); }
+  #feedback-bar.hidden { background: transparent; border-top: 1px solid transparent; }
+
+  /* BOTTOM BUTTONS */
+  #btn-bar {
+    background: rgba(15, 23, 42, 0.5);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding: 20px 40px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .action-btn {
+    padding: 12px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: #e2e8f0;
+    cursor: pointer;
+    border-radius: 0.75rem;
+    min-width: 140px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .action-btn:hover { 
+    background: rgba(255,255,255,0.1); 
+    transform: translateY(-2px);
+  }
+  .action-btn:active { transform: translateY(0); }
+  
+  .action-btn.primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.39);
+  }
+  .action-btn.primary:hover { 
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.23);
+  }
+
+  /* ARROW NAV */
+  #arrow-next {
+    width: 60px;
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #94a3b8;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+  #arrow-next:hover { 
+    background: rgba(255,255,255,0.1); 
+    color: #f8fafc;
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 280px;
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  #sidebar-header {
+    background: rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 16px 20px;
+    font-weight: 700;
+    font-size: 16px;
+    color: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  #sidebar-header .help { 
+    color: #8b5cf6; 
+    background: rgba(139, 92, 246, 0.1);
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    font-weight: 600; 
+    font-size: 14px; 
+    cursor: pointer; 
+  }
+  #sidebar-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px;
+  }
+  .sidebar-item {
+    padding: 12px 16px;
+    font-size: 15px;
+    cursor: pointer;
+    border-radius: 0.75rem;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s;
+    color: #cbd5e1;
+  }
+  .sidebar-item:hover { background: rgba(255,255,255,0.05); }
+  .sidebar-item.active { 
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%); 
+    color: #fff; 
+    font-weight: 600;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+  }
+  .sidebar-item.done-ok { color: #34d399; }
+  .sidebar-item.done-fail { color: #f87171; }
+  .sidebar-item.done-skip { color: #64748b; font-style: italic; }
+
+  /* RESULTS OVERLAY */
+  #results-screen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 99;
+    align-items: center;
+    justify-content: center;
+  }
+  #results-screen.show { display: flex; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  
+  #results-box {
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 1.5rem;
+    padding: 40px;
+    width: 500px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    color: #e2e8f0;
+  }
+  #results-box h2 {
+    font-size: 28px;
+    color: #f8fafc;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .res-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .res-row .val { font-weight: 700; font-size: 18px; }
+  .res-row .val.ok  { color: #34d399; }
+  .res-row .val.bad { color: #f87171; }
+  .res-row .val.pts { color: #8b5cf6; font-size: 20px; }
+  
+  #grade-bar {
+    margin: 30px 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 16px;
+    border-radius: 1rem;
+  }
+  .grade-A { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .grade-B { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+  .grade-C { background: rgba(250, 204, 21, 0.15); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); }
+  .grade-D { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+  
+  #btn-retry {
+    width: 100%;
+    padding: 16px;
+    font-size: 18px;
+    font-family: inherit;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.39);
+  }
+  #btn-retry:hover { 
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.23);
+  }
+
+  /* SCROLLBAR STYLE */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+  
+  /* ADDING A SUBTLE ANIMATION TO QUESTION PANEL */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  #question-body {
+    animation: slideIn 0.3s ease-out;
+  }
+</style>
+</head>
+<body>
+
+<div id="titlebar">
+  <span>derecho privado s xx1 — Tecnología, Humanidades y Modelos Globales</span>
+  <span>■</span>
+</div>
+
+<div id="statsbar">
+  <div class="stat-item">Cuestión: <span id="stat-q">1/72</span></div>
+  <div class="stat-item">Aciertos: <span id="stat-ok" class="ok">0</span></div>
+  <div class="stat-item">Fallos: <span id="stat-fail" class="bad">0</span></div>
+  <div class="stat-item">Puntos: <span id="stat-pts" class="pts">0</span></div>
+</div>
+
+<div id="main">
+  <div id="question-panel">
+    <div id="question-body">
+      <div id="question-text"></div>
+      <div id="options-container"></div>
+    </div>
+    <div id="feedback-bar" class="hidden"></div>
+    <div id="btn-bar">
+      <button class="action-btn" onclick="skipQuestion()">Posponer</button>
+      <button class="action-btn" onclick="noContestar()">No contestar</button>
+      <button class="action-btn primary" onclick="contestar()">Contestar</button>
+    </div>
+  </div>
+
+  <button id="arrow-next" onclick="goNext()" title="Siguiente">&#9658;</button>
+
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span>Cuestiones</span>
+      <span class="help">?</span>
+    </div>
+    <div id="sidebar-list"></div>
+  </div>
+</div>
+
+<div id="results-screen">
+  <div id="results-box">
+    <h2>📊 Resultados del Quiz</h2>
+    <div class="res-row"><span>Total de preguntas</span><span class="val" id="r-total"></span></div>
+    <div class="res-row"><span>Aciertos</span><span class="val ok" id="r-ok"></span></div>
+    <div class="res-row"><span>Fallos</span><span class="val bad" id="r-fail"></span></div>
+    <div class="res-row"><span>Sin contestar</span><span class="val" id="r-skip"></span></div>
+    <div class="res-row"><span>Porcentaje</span><span class="val" id="r-pct"></span></div>
+    <div id="grade-bar"></div>
+    <button id="btn-retry" onclick="initQuiz()">🔄 Reintentar (preguntas mezcladas)</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS_RAW = [
+  { q:"¿A qué atributo de la IA se le atribuye la capacidad de identificar formas, luces, colores y sonidos?", correct:"Sentir", wrong:["Comprender","Actuar","Razonar"] },
+  { q:"¿A qué atributo de la IA se le atribuye la capacidad de analizar y entender la información recopilada?", correct:"Comprender", wrong:["Sentir","Actuar","Almacenar"] },
+  { q:"¿A qué atributo de la IA se le atribuye la capacidad de conducción autónoma en vehículos?", correct:"Actuar", wrong:["Sentir","Comprender","Conectar"] },
+  { q:"¿A qué causa atribuye Kuhn la evolución de la ciencia y la tecnología?", correct:"A cambios en la manera de pensar", wrong:["A la acumulación de datos empíricos","Al financiamiento estatal","A inventos individuales de grandes genios"] },
+  { q:"¿A qué nos referimos cuando hablamos de 'aprendizaje automático' o machine learning?", correct:"A que los algoritmos se adaptan a las evidencias de los comportamientos reales", wrong:["A que las computadoras siguen instrucciones fijas","A que los robots aprenden por imitación física","A que los algoritmos eliminan la necesidad de datos históricos"] },
+  { q:"¿A que nos referimos cuando hablamos de Inteligencia Artificial?", correct:"Ciencia y tecnología que se proponen resolver problemáticas emulando capacidades cognitivas humanas", wrong:["Sistemas de automatización industrial sin capacidad de aprendizaje","Robots humanoides que reemplazan la fuerza de trabajo manual","Software de análisis estadístico para grandes empresas"] },
+  { q:"¿A qué organismo se le atribuye el documento 'Recomendación sobre la Ética de la IA'?", correct:"UNESCO", wrong:["OMS","Banco Mundial","OEA"] },
+  { q:"¿A qué proceso hacemos referencia cuando analizamos la destrucción de una empresa y el surgimiento de una nueva que resuelve mejor las necesidades del mercado?", correct:"Dinámica de la destrucción creativa", wrong:["Transformación digital corporativa","Ciclo de innovación disruptiva","Modelo de negocio Canvas"] },
+  { q:"¿Cómo logra Google Maps sugerirnos lugares para comer?", correct:"Big data", wrong:["Realidad aumentada","Blockchain","Computación cuántica"] },
+  { q:"¿Cómo podrá la IA colaborar en el futuro con la creación de empleos humanos?", correct:"La IA podrá centrarse en que los empleados humanos hagan tareas de mantenimiento", wrong:["La IA creará empleos nuevos en manufactura artesanal","La IA eliminará la necesidad de gestión empresarial humana","La IA se ocupará de la formación académica universitaria"] },
+  { q:"¿Cómo se denomina a la creación de entornos, escenas, espacios y objetos digitales de apariencia real que generan en el usuario la sensación de estar dentro de la realidad?", correct:"Realidad Virtual", wrong:["Metaverso","Realidad Aumentada","Holografía"] },
+  { q:"¿Cómo se denomina el espacio físico o virtual en donde oferta y demanda se encuentran para sostener la actividad económica?", correct:"Mercado", wrong:["Plataforma digital","Sistema financiero","Red de distribución"] },
+  { q:"¿Cuál criterio toma Harari en relación a la futura toma de decisiones basada en algoritmos?", correct:"Si bien los algoritmos filosóficos nunca serán perfectos, les bastará ser mejores que los hombres para reemplazarnos en algunas tomas de decisiones puntuales", wrong:["Los algoritmos nunca podrán superar la intuición humana en ningún ámbito","Los algoritmos solo serán útiles en decisiones médicas y financieras","Los algoritmos reemplazarán totalmente al juicio humano en todos los campos"] },
+  { q:"¿Cuál de las fases evolutivas en la construcción de contenido permitió la transmisión y expansión del Martín Fierro?", correct:"Imprenta", wrong:["La escritura","Internet","La oralidad"] },
+  { q:"¿Cuál de las siguientes actividades representa un ejemplo DIFERENTE al de tecnología?", correct:"Hipótesis que permiten generar un nuevo paradigma científico", wrong:["Máquina de vapor para producción industrial","Software de gestión empresarial","Impresora 3D para fabricación de piezas"] },
+  { q:"¿Cuál de las siguientes opciones se corresponde con un ejemplo de tecnologías intermedias?", correct:"Edificio verde o sustentable", wrong:["Algoritmo de machine learning","Prótesis biónica con sensores neurales","Computadora cuántica de IBM"] },
+  { q:"¿Cuál de los siguientes principios corresponden a los aportes de Taylor en la Segunda Revolución Industrial?", correct:"Cadena de producción en serie", wrong:["Algoritmos de inteligencia artificial","Sistema bancario de reserva fraccionaria","Energía solar para plantas industriales"] },
+  { q:"¿Cuál de los siguientes objetivos puedes alcanzar mediante la tecnología de la biología sintética?", correct:"Reconfiguración del ADN", wrong:["Procesamiento de big data en tiempo real","Fabricación aditiva capa por capa","Transmisión de datos por fibra óptica"] },
+  { q:"¿Cuál de los siguientes países ha logrado desarrollar un modelo capitalista exitoso con bienestar para toda la población?", correct:"Noruega", wrong:["Singapur","Brasil","Estados Unidos"] },
+  { q:"¿Cuál de los siguientes principios forma parte de la metodología Startup?", correct:"El espíritu emprendedor es management", wrong:["La rentabilidad debe lograrse en el primer trimestre","El producto debe estar completamente terminado antes de lanzarse","El emprendedor debe trabajar solo para mantener el control"] },
+  { q:"¿Cuál es el avance tecnológico más destacado de la Tercera Revolución Industrial?", correct:"Computadora u ordenador", wrong:["El sistema eléctrico trifásico","La máquina de vapor","El motor a combustión"] },
+  { q:"¿Cuál es el concepto que implica que la IA adquiera nuevos formatos a partir de la experiencia de ponerlos en funcionamiento?", correct:"Machine learning", wrong:["Big data","Blockchain","Internet de las cosas"] },
+  { q:"¿Cuál es el desafío central de las organizaciones en el marco de la transformación digital?", correct:"Lograr un nuevo y más ágil funcionamiento reformulando culturas y procesos bajo el paradigma digital", wrong:["Comprar la mayor cantidad de hardware moderno posible","Despedir empleados y reemplazarlos por robots","Trasladar todos los procesos a la nube sin cambiar la cultura"] },
+  { q:"¿Cuál es el desafío del capitalismo en el marco de la cuarta revolución industrial según Pallaro?", correct:"Reincorporar a las mayorías a los procesos de ascenso social", wrong:["Eliminar la intervención del Estado en la economía","Aumentar la tasa de ganancia de las grandes corporaciones","Reducir el gasto público para equilibrar el presupuesto fiscal"] },
+  { q:"¿Cuál es el dilema principal de la creación de valor?", correct:"La cuantificación", wrong:["La distribución","La producción","La comercialización"] },
+  { q:"¿Cuál es el gran supuesto del modelo de empresas biónicas de Boston Consulting Group?", correct:"La biología humana puede ser potenciada por las nuevas tecnologías para el funcionamiento de equipos y organizaciones", wrong:["Las empresas deben imitar los ciclos biológicos naturales para ser sostenibles","Los empleados deben fusionar sus cuerpos con implantes tecnológicos","La tecnología debe reemplazar completamente a los organismos humanos"] },
+  { q:"¿Cuál es el paradigma imperante en la Cuarta Revolución Industrial?", correct:"Tecnologías inteligentes", wrong:["Energía eléctrica masiva","Producción en cadena de montaje","Globalización financiera"] },
+  { q:"¿Cuál es el principal criterio que el concepto de sustentabilidad le brinda a las empresas sociales?", correct:"Combinar mercados con propósitos económicos, sociales y ecológicos en el largo plazo", wrong:["Maximizar las ganancias para reinvertirlas en proyectos de I+D","Eliminar toda actividad económica que genere residuos industriales","Operar exclusivamente en economías desarrolladas con marco legal claro"] },
+  { q:"¿Cuál es el principal legado de la teoría de revoluciones científicas de Kuhn?", correct:"El conocimiento científico y la aplicación tecnológica como un constante devenir en evolución, sin dogmas que lo frenen", wrong:["La certeza de que los paradigmas son permanentes e inamovibles","La demostración de que la ciencia avanza de forma lineal y acumulativa","La prueba de que solo los grandes genios individuales generan avances"] },
+  { q:"¿Cuál es el riesgo que implicaría que en el futuro los gobiernos nacionalicen los datos?", correct:"Que se produzcan dictaduras digitales", wrong:["Que aumente la privacidad de los ciudadanos","Que se elimine el mercado libre de datos","Que se acelere el desarrollo de la IA sin regulación"] },
+  { q:"¿Cuál es la ciencia que se ocupa de la asignación y administración de los recursos siempre escasos?", correct:"Economía", wrong:["Sociología","Administración de empresas","Ingeniería industrial"] },
+  { q:"¿Cuál es la empresa que refleja el recorrido histórico de la humanidad en las diferentes Revoluciones Industriales?", correct:"Siemens", wrong:["General Electric","IBM","Tesla"] },
+  { q:"¿Cuál es la herramienta que favoreció la multiplicación de las posibilidades de descubrir y atender nichos de mercado dispersos geográficamente?", correct:"Internet", wrong:["Blockchain","Realidad aumentada","Computación cuántica"] },
+  { q:"¿Cuál es la idea central de las principales críticas hacia el funcionamiento actual del capitalismo?", correct:"Es muy eficaz en ampliar la abundancia, pero ineficaz para generar mecanismos de distribución", wrong:["Es incapaz de generar riqueza porque prioriza la distribución","Es un sistema que impide totalmente la innovación tecnológica","Es eficaz en distribución pero incapaz de crear nuevos bienes"] },
+  { q:"¿Cuál es la relevancia de la matriz BCG para cualquier empresa que opera en los mercados?", correct:"Permite comprender la posición relativa de un producto o servicio dentro de un mercado específico", wrong:["Permite calcular el costo exacto de producción de cada unidad","Determina el salario óptimo de cada empleado según su productividad","Define el precio de venta máximo sin perder competitividad"] },
+  { q:"¿Cuál es la utilidad que tiene el Business Model Canvas?", correct:"Diseñar y poner en marcha un nuevo negocio abordando sus aristas principales", wrong:["Gestionar los recursos humanos de multinacionales","Calcular precios óptimos con inteligencia artificial","Realizar auditorías contables de empresas en crecimiento"] },
+  { q:"¿Cuál fue la manifestación económica central que permitió crear la máquina de vapor?", correct:"El primer formato de empresa industrial", wrong:["El surgimiento de los mercados financieros globales","La creación del sistema bancario moderno","La aparición del comercio por rutas marítimas"] },
+  { q:"¿Cuál fue la manifestación social central de la Segunda Revolución Industrial?", correct:"Surgimiento del Proletariado", wrong:["Fin del feudalismo agrario","Aparición de la clase media urbana","Creación del sistema democrático moderno"] },
+  { q:"¿Cuál puede ser considerado el desarrollo principal de la Segunda Revolución Industrial?", correct:"Energía eléctrica masiva", wrong:["Internet de alta velocidad","La máquina de vapor mejorada","La impresión en serie de libros"] },
+  { q:"¿Cuál sería el gran riesgo de la expansión de la gratuidad de muchos productos y servicios en la economía digital?", correct:"Que se altere el dinamismo de la economía al cortar la secuencia de precios que desemboca en ventas, crecimiento y empleo", wrong:["Que los consumidores dejen de valorar los productos premium","Que el Estado no pueda recaudar impuestos al consumo","Que las empresas tradicionales quiebren por no adaptarse"] },
+  { q:"¿Cuáles son las características que atribuye Schwab a la Cuarta Revolución Industrial?", correct:"Velocidad, amplitud y profundidad, e impacto en los sistemas", wrong:["Lentitud, precisión y alcance local","Automatización, estandarización y control estatal","Digitalización, privatización y desindustrialización"] },
+  { q:"¿Cuál tecnología es la que suele enfocarse en el desarrollo de mejores prácticas y modelos para resolver problemas en organizaciones?", correct:"Tecnologías blandas", wrong:["Tecnologías duras","Tecnologías intermedias","Tecnologías físicas"] },
+  { q:"¿Cuáles de las siguientes opciones corresponden a desarrollos tecnológicos de la Segunda Revolución Industrial? (Seleccione el grupo correcto)", correct:"Máquina de escribir, Automóvil, Bicicleta, Radio", wrong:["Computadora, Internet, Láser, Fibra óptica","Imprenta, Telescopio, Brújula, Pólvora","Dron, Smartphone, GPS, Satélite"] },
+  { q:"¿Cuáles fueron las limitaciones de la energía eléctrica y eólica en la Primera Revolución Industrial?", correct:"Limitación en cuanto a su cantidad y localización geográfica", wrong:["Eran demasiado costosas para cualquier empresa","Requerían conocimientos científicos no disponibles en la época","No eran capaces de mover maquinaria de mediana escala"] },
+  { q:"¿Cuáles son las características comunes a las tecnologías duras?", correct:"Provienen de las ciencias duras, ciencias exactas y se plasman en productos tangibles", wrong:["Provienen de las ciencias sociales y se expresan en modelos de gestión","Son intangibles y se orientan a mejorar procesos organizacionales","Se generan exclusivamente en laboratorios de investigación universitaria"] },
+  { q:"¿Cuáles son las condiciones en las que se enmarca el surgimiento de un startup?", correct:"Condiciones de extrema incertidumbre", wrong:["Condiciones de máxima estabilidad económica","Contextos de mercados perfectamente regulados","Entornos de baja innovación tecnológica"] },
+  { q:"¿Cuáles son las dimensiones que tiene la tecnología como práctica social?", correct:"Dimensión ideológica-cultural, dimensión técnica y dimensión organizativa", wrong:["Dimensión económica, dimensión jurídica y dimensión política","Dimensión física, dimensión química y dimensión biológica","Dimensión global, dimensión local y dimensión temporal"] },
+  { q:"¿Cuáles son los derechos intrínsecos que pregona la Recomendación sobre la Ética de la IA?", correct:"Inclusión, equidad y no discriminación", wrong:["Privacidad, soberanía y transparencia","Libertad, fraternidad e igualdad","Seguridad, innovación y competitividad"] },
+  { q:"¿Cuándo la extracción de valor se considera nociva para la economía y la sociedad?", correct:"Cuando está desbalanceada con la creación de valor, superándola", wrong:["Cuando la realizan empresas extranjeras en territorio nacional","Cuando involucra recursos naturales no renovables","Cuando se realiza en sectores no regulados por el Estado"] },
+  { q:"¿Cuándo nace un nuevo paradigma según la teoría de Thomas Kuhn?", correct:"Cuando se producen anomalías en la sociedad que no pueden resolverse con las ideas y teorías vigentes", wrong:["Cuando un gobierno financia un gran proyecto científico","Cuando una empresa privada lanza un producto disruptivo","Cuando la mayoría de la población adopta una nueva tecnología"] },
+  { q:"¿Cuándo se considera que existe creación de valor?", correct:"Cuando existe cualquier producto o servicio que es aceptado y demandado por alguien", wrong:["Cuando una empresa obtiene ganancias superiores al 20% anual","Cuando el Estado certifica la utilidad del producto","Cuando el producto es fabricado con tecnología de última generación"] },
+  { q:"¿Cuándo se considera que existe evento emprendedor?", correct:"Cuando una persona o equipo logran un encaje entre identificación de un problema y ejecución de una solución para alguien", wrong:["Cuando se registra legalmente una empresa ante el Estado","Cuando se obtiene financiamiento de un banco para el negocio","Cuando el emprendedor obtiene su primer cliente pagador"] },
+  { q:"¿Cuántos grupos de impulsores encontramos en las tecnologías de la Cuarta Revolución Industrial?", correct:"Tres impulsores", wrong:["Dos impulsores","Cuatro impulsores","Cinco impulsores"] },
+  { q:"¿De qué manera Harari considera que deberá ser la interrelación entre la IA y el hombre en las próximas décadas?", correct:"Cooperación humana e inteligencia artificial", wrong:["Sustitución total del trabajo humano por máquinas autónomas","Dominio humano absoluto sobre los sistemas de IA","Separación estricta entre el mundo humano y el mundo de la IA"] },
+  { q:"¿Dentro de qué tipo de impulsores de la Cuarta Revolución Industrial se encuentra el avance en Nuevos Materiales?", correct:"Impulsores físicos", wrong:["Impulsores digitales","Impulsores biológicos","Impulsores económicos"] },
+  { q:"¿En cuál de los siguientes ejemplos prácticos se puede observar el uso de la Inteligencia Artificial?", correct:"Recomendaciones de contenidos en Netflix", wrong:["Envío de correos electrónicos programados","Almacenamiento de archivos en la nube","Uso de una calculadora científica avanzada"] },
+  { q:"¿En qué cuadrante de la matriz BCG se pueden ubicar las empresas Startup Tecnológicas?", correct:"Incógnitas", wrong:["Estrellas","Vacas lecheras","Perros"] },
+  { q:"¿En qué consiste la controversia que se discute hoy en el mundo en torno a las compañías GAFA?", correct:"Generan valor para la humanidad, pero al mismo tiempo concentran demasiado poder y datos de personas y organizaciones", wrong:["Practican dumping de precios para eliminar a la competencia local","No pagan impuestos en ningún país del mundo","Sus productos son adictivos y generan daño psicológico comprobado"] },
+  { q:"¿En qué momento histórico se desarrolla el nacimiento de la clase obrera trabajadora?", correct:"Durante la Segunda Revolución Industrial", wrong:["Durante la Primera Revolución Industrial","Durante la Tercera Revolución Industrial","Durante la Revolución Francesa"] },
+  { q:"¿La gratuidad de plataformas como Facebook, Instagram y Google en qué modelo de negocio se basa?", correct:"Obtención y monetización de datos", wrong:["Publicidad tradicional en medios impresos","Venta de hardware y dispositivos electrónicos","Suscripciones premium opcionales para usuarios avanzados"] },
+  { q:"¿Por qué podemos decir que la ciencia ficción actual confunde y no muestra la realidad sobre la IA?", correct:"Porque la ciencia ficción actual tiende a confundir inteligencia con conciencia", wrong:["Porque muestra la IA como algo demasiado simple y fácil de controlar","Porque ignora completamente los avances reales de la tecnología","Porque representa la IA como algo exclusivamente militar y destructivo"] },
+  { q:"¿Por qué Schumpeter consideró a la destrucción creativa como esencia misma del sistema capitalista?", correct:"Es necesario para el sistema que nuevas empresas capturen recursos y resuelvan nuevas necesidades que las más antiguas no pueden", wrong:["Porque la quiebra de empresas libera trabajadores para el sector público","Porque la destrucción de empresas viejas reduce la inflación estructural","Porque sin destrucción no puede haber ahorro nacional suficiente"] },
+  { q:"¿Por qué se considera a la inteligencia artificial como la nueva electricidad de la humanidad?", correct:"Nos libera de la tracción manual para muchas situaciones útiles para la humanidad", wrong:["Porque consume la misma cantidad de energía que la red eléctrica global","Porque fue inventada por los mismos científicos que desarrollaron la electricidad","Porque solo funciona conectada a fuentes de energía eléctrica renovable"] },
+  { q:"¿Por qué se considera a la Primera Revolución Industrial como el disparador de una nueva relación de las tecnologías?", correct:"Los nuevos dispositivos trascienden y se separan de las capacidades musculares humanas", wrong:["Porque se inventó la electricidad por primera vez","Porque el Estado comenzó a financiar la ciencia sistemáticamente","Porque se creó el mercado financiero moderno"] },
+  { q:"¿Por qué se considera a la Tercera Revolución Industrial como la primera científico-tecnológica propiamente dicha?", correct:"Porque es producto de la convergencia de la ciencia aplicada a la microelectrónica, la informática y las telecomunicaciones", wrong:["Porque fue la primera en utilizar energía eléctrica a gran escala","Porque surgió del esfuerzo de inventores individuales sin apoyo científico","Porque ocurrió exclusivamente en países con economías planificadas"] },
+  { q:"¿Por qué se considera que los procesos de adopción de tecnologías son verdaderos entramados sociotécnicos?", correct:"Porque se producen a través de una dinámica con múltiples actores, incentivos y condicionamientos en el marco de una sociedad determinada", wrong:["Porque siempre son dirigidos por expertos en ingeniería de sistemas","Porque dependen únicamente de la disponibilidad de capital financiero","Porque ocurren de forma automática cuando la tecnología está disponible"] },
+  { q:"¿Qué anomalía central se presentaba a principios del Siglo XIX para motivar a Siemens a desarrollar el telégrafo eléctrico?", correct:"Creciente dinámica mundial que requería mejores comunicaciones de largo alcance", wrong:["Falta de energía eléctrica para las fábricas industriales de la época","Escasez de mano de obra calificada en las empresas manufactureras","Ausencia de sistemas de transporte ferroviario entre ciudades"] },
+  { q:"¿Qué atributos exhibe Siemens para fundamentar su larga historia de éxito empresarial?", correct:"Curiosidad científica y acción empresarial", wrong:["Monopolio de mercado y lobby político","Reducción de costos laborales y deslocalización","Adquisición sistemática de startups competidoras"] },
+  { q:"¿Qué avances de la ciencia aplicada encuentran su máxima expresión durante la revolución científico-tecnológica?", correct:"Biotecnología, Informática, Microelectrónica y Telecomunicaciones", wrong:["Metalurgia, Siderurgia, Minería y Petroquímica","Agronomía, Veterinaria, Botánica y Zoología","Arquitectura, Urbanismo, Geología y Cartografía"] },
+  { q:"¿Qué avances forman parte del grupo de impulso físico en el marco de la Cuarta Revolución Industrial?", correct:"Los vehículos autónomos, la fabricación 3D, la robótica avanzada y los nuevos materiales", wrong:["Big data, blockchain, IoT y cloud computing","Biotecnología, CRISPR, neurociencias y genómica","Redes sociales, algoritmos, realidad virtual y streaming"] },
+  { q:"¿Qué es un paradigma?", correct:"El sistema de ideas y pensamiento de aceptación y validación social desde el cual se interpreta la realidad", wrong:["Una tecnología disruptiva que cambia un mercado existente","Un modelo matemático para predecir comportamientos económicos","Un conjunto de normas legales que regulan la actividad científica"] },
+  { q:"¿Qué gran avance permitió la máquina de vapor en el marco de la Primera Revolución?", correct:"Escalar las actividades económicas al liberarse del agua y el viento para producir energías", wrong:["Conectar eléctricamente las ciudades industriales de Europa","Automatizar la producción textil mediante tarjetas perforadas","Desarrollar el transporte ferroviario transcontinental desde el inicio"] },
+  { q:"¿Qué implica el Producto Mínimo Viable en la metodología Startup?", correct:"Versión mínima en esfuerzo y tiempo de un producto que permita realizar el ciclo crear, medir, aprender", wrong:["El producto final con todas sus funcionalidades lanzado al mercado masivo","Un prototipo diseñado exclusivamente para inversores","Una versión beta solo testeable internamente por el equipo fundador"] },
+  { q:"¿Qué significa el concepto machine learning en la evolución de la inteligencia artificial?", correct:"Que las máquinas aprenden con la experiencia de uso", wrong:["Que las máquinas son programadas manualmente para cada tarea nueva","Que los algoritmos matemáticos reemplazan la necesidad de datos","Que el aprendizaje humano es replicado mediante hardware especializado"] },
+  { q:"¿Qué tipo de tecnología con IA podemos ejemplificar mediante Siri, Alexa y Cortana?", correct:"Asistente virtual", wrong:["Realidad aumentada","Fabricación 3D","Blockchain descentralizada"] },
+  { q:"¿Qué tipo de mercado se configura en los servicios públicos como agua, luz o gas natural?", correct:"Monopolio", wrong:["Competencia perfecta","Oligopolio","Mercado libre sin regulación"] },
+  { q:"¿Qué tipo de sociedad surge a partir de los avances de la Tercera Revolución Industrial?", correct:"La sociedad del conocimiento o la información", wrong:["La sociedad industrial masiva","La sociedad post-capitalista","La sociedad agraria tecnificada"] },
+  { q:"La IA no solo está a punto de suplantar a los humanos, sino que también posee capacidades no humanas. ¿Cuáles son esas dos capacidades?", correct:"Capacidad de conectividad y de actualización", wrong:["Capacidad de emoción y de conciencia","Capacidad de creatividad y de intuición","Capacidad de memoria infinita y velocidad de cálculo"] },
+  { q:"La Primera Revolución Industrial permitió:", correct:"El paso de una sociedad eminentemente agraria a una sociedad industrial", wrong:["El surgimiento del capitalismo financiero global","La aparición del Estado de bienestar social moderno","La creación del sistema democrático representativo"] },
+  { q:"¿Cuál es el avance tecnológico correspondiente a la Primera Revolución Industrial para ejemplificarla?", correct:"En 1814 Stephenson usó la máquina de vapor como motor para impulsar una locomotora", wrong:["En 1956 IBM lanzó la primera computadora comercial","En 1895 Tesla diseñó el sistema de corriente alterna","En 1876 Bell patentó el primer teléfono funcional"] },
+  { q:"¿Por qué se considera a la novedad de la imprenta como un verdadero hito en la evolución de las TICs?", correct:"Porque por primera vez en la historia, el conocimiento de múltiples fuentes podía organizarse y circular sin límites", wrong:["Porque permitió la comunicación en tiempo real a larga distancia","Porque fue el primer dispositivo electrónico de procesamiento de texto","Porque facilitó la traducción automática entre idiomas distintos"] },
+  { q:"¿Qué elemento es considerado fundamental para la evolución de la civilización humana?", correct:"La generación de energía", wrong:["El desarrollo del lenguaje escrito","La creación de instituciones políticas democráticas","El surgimiento del comercio internacional"] },
+  { q:"¿Qué elemento es fundamental para que exista una nueva tecnología a partir de un nuevo conocimiento?", correct:"La existencia real de un instrumento o modelo que permita resolver alguna problemática humana", wrong:["La publicación del conocimiento en revistas científicas indexadas","El financiamiento de al menos dos empresas privadas inversoras","La aprobación gubernamental del proceso de investigación aplicada"] },
+  { q:"Identifica a qué tecnología hacemos referencia cuando decimos: 'crean objetos mediante impresiones capa por capa a partir de modelos digitales'", correct:"Fabricación 3D", wrong:["Realidad virtual inmersiva","Blockchain distribuida","Computación en la nube"] },
+  { q:"¿Qué se entiende por 'efecto red'?", correct:"Al tener mucho conocimiento de los usuarios en forma barata, las empresas basadas en plataforma pueden ofrecer propuestas de valor que generan mucha atracción de usuarios", wrong:["La expansión automática de una red WiFi por toda una ciudad","El efecto viral de una publicación en redes sociales","La interconexión física entre servidores de distintos continentes"] },
+  { q:"Según Harari, ¿cuál sería el impacto negativo al que está asociada la automatización en el mercado laboral?", correct:"Aumento del desempleo masivo", wrong:["Reducción de salarios solo en el sector manufactura","Desaparición exclusiva de empleos en el sector servicios","Incremento de las jornadas laborales en industrias automatizadas"] },
+  { q:"Según Klaus Schwab, ¿qué características distinguen a la cuarta revolución industrial de las anteriores?", correct:"La velocidad, amplitud e impacto de la misma", wrong:["La lentitud, precisión y alcance local","La automatización, estandarización y control estatal","La digitalización, privatización y desindustrialización"] },
+  { q:"¿Cuál es la razón principal que explica la destreza de Apple para resolver tanto la destrucción creativa como el dilema del innovador?", correct:"La capacidad de diseñar y lanzar nuevos productos tecnológicos exitosos de forma permanente", wrong:["Su modelo basado exclusivamente en servicios de suscripción","Su estrategia de adquirir startups antes de que compitan","Su alianza con el gobierno estadounidense para proyectos tecnológicos"] },
+  { q:"¿Qué avance representa la principal incorporación de la Tercera Revolución Industrial?", correct:"La microelectrónica", wrong:["El motor a combustión interna","La energía nuclear de fisión","El sistema ferroviario intercontinental"] },
+  { q:"¿Cuándo se denomina extracción de valor?", correct:"Cuando el valor económico es capturado por personas u organizaciones en forma de rentas y beneficios", wrong:["Cuando una empresa innova y lanza un producto al mercado","Cuando el Estado recauda impuestos para redistribuir la riqueza","Cuando una empresa reduce costos de producción mediante tecnología"] },
+  { q:"El movimiento de los luditas tenía como convicción común:", correct:"La creencia de que las maquinas degradaban el trabajo humano", wrong:["La defensa del derecho a huelga de los trabajadores industriales","La oposición al sistema capitalista en favor del socialismo","La demanda de mejores salarios y jornadas laborales reducidas"] },
+  { q:"¿En qué basa Airbnb su estrategia de uso intensivo de los datos y la inteligencia artificial?", correct:"En su decisión de recolectar millones de datos sobre los comportamientos de sus clientes", wrong:["En su posición monopólica que le permite acceder a información ventajosa","En su acuerdo exclusivo con Google para el análisis de datos","En el uso de blockchain para proteger los datos de los usuarios"] },
+  { q:"¿Qué tipo de sociedad y qué herramienta surge en la Tercera Revolución Industrial con avances en el proceso productivo?", correct:"Primer controlador programable de regulación de producción", wrong:["Primera línea de ensamblaje automatizada por robots mecánicos","Primera central nuclear de generación eléctrica para industrias","Primera red de comunicación satelital para coordinar fábricas"] },
+  { q:"¿Cuáles son los beneficios que buscan obtener las empresas sociales que forman el novedoso 'cuarto sector'?", correct:"Beneficios financieros para beneficios sociales", wrong:["Exclusivamente ganancias para sus accionistas inversores","Solo beneficios para el Estado mediante pago de impuestos","Subvenciones del Estado sin necesidad de generar ingresos propios"] },
+  { q:"¿Qué conclusiones se obtienen al analizar la velocidad de adopción de las tecnologías de comunicaciones?", correct:"La necesidad de formatos permanentemente a raíz de la obsolescencia temprana de cada avance tecnológico", wrong:["La estabilidad y permanencia de los formatos tecnológicos a lo largo del tiempo","La resistencia generalizada de la población a adoptar nuevas tecnologías","La dependencia exclusiva de los países desarrollados para generar innovación"] },
+  { q:"¿Qué deben hacer con los datos las organizaciones para convertirlos en un activo de economía digital?", correct:"Definirlos, recolectarlos y relacionarlos para la toma de decisiones", wrong:["Venderlos directamente a empresas de marketing global","Almacenarlos en servidores físicos propios sin conexión a la nube","Publicarlos en plataformas abiertas para uso de toda la comunidad"] },
+  { q:"¿Cuándo se considera que existe evento emprendedor según la metodología Lean Startup?", correct:"Ciclo crear, medir, aprender", wrong:["Planificar, ejecutar y controlar","Investigar, diseñar y producir","Invertir, lanzar y escalar"] },
+  { q:"Uno de los principios del método Lean Startup es el ciclo de aprendizaje. ¿Cuáles son sus 3 componentes principales?", correct:"Ideas, datos y producto", wrong:["Inversión, planificación y control","Investigación, diseño y lanzamiento","Mercado, cliente y precio"] }
+];
+
+let questions = [];
+let current = 0;
+let aciertos = 0;
+let fallos = 0;
+let statuses = []; // 'pending','correct','wrong','skip','nocontest'
+let selected = null;
+let answered = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function initQuiz() {
+  document.getElementById('results-screen').classList.remove('show');
+  questions = shuffle(QUESTIONS_RAW).map(q => ({
+    ...q,
+    options: shuffle([q.correct, ...q.wrong])
+  }));
+  aciertos = 0;
+  fallos = 0;
+  statuses = Array(questions.length).fill('pending');
+  current = 0;
+  selected = null;
+  answered = false;
+  buildSidebar();
+  renderQuestion();
+  updateStats();
+}
+
+function buildSidebar() {
+  const list = document.getElementById('sidebar-list');
+  list.innerHTML = '';
+  questions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'sidebar-item' + (i===0?' active':'');
+    div.id = `si-${i}`;
+    div.textContent = `${getTypeLabel(i)} ${i+1}`;
+    div.onclick = () => jumpTo(i);
+    list.appendChild(div);
+  });
+}
+
+function getTypeLabel(i) {
+  // alternate labels like the screenshot
+  const labels = ['Escoger','Chequear'];
+  return labels[i%2];
+}
+
+function updateSidebar() {
+  questions.forEach((q, i) => {
+    const el = document.getElementById(`si-${i}`);
+    if(!el) return;
+    el.className = 'sidebar-item';
+    if(i === current) el.classList.add('active');
+    if(statuses[i]==='correct') el.classList.add('done-ok');
+    else if(statuses[i]==='wrong') el.classList.add('done-fail');
+    else if(statuses[i]==='skip'||statuses[i]==='nocontest') el.classList.add('done-skip');
+  });
+  // scroll sidebar to current
+  const el = document.getElementById(`si-${current}`);
+  if(el) el.scrollIntoView({block:'nearest'});
+}
+
+function updateStats() {
+  const total = questions.length;
+  document.getElementById('stat-q').textContent = `${current+1}/${total}`;
+  document.getElementById('stat-ok').textContent = aciertos;
+  document.getElementById('stat-fail').textContent = fallos;
+  document.getElementById('stat-pts').textContent = aciertos;
+}
+
+function renderQuestion() {
+  const q = questions[current];
+  answered = statuses[current] !== 'pending';
+  selected = null;
+
+  document.getElementById('question-text').innerHTML = `<strong>${current+1}.</strong> ${q.q}`;
+
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+
+  q.options.forEach((opt, i) => {
+    const row = document.createElement('div');
+    row.className = 'option-row';
+    row.id = `opt-row-${i}`;
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'opt';
+    radio.id = `opt-${i}`;
+    radio.value = opt;
+    radio.disabled = answered;
+    radio.addEventListener('change', () => { selected = opt; });
+
+    const label = document.createElement('label');
+    label.htmlFor = `opt-${i}`;
+    label.textContent = opt;
+
+    row.appendChild(radio);
+    row.appendChild(label);
+    row.onclick = () => {
+      if(!answered) { radio.checked = true; selected = opt; }
+    };
+    container.appendChild(row);
+  });
+
+  const fb = document.getElementById('feedback-bar');
+  fb.className = 'hidden';
+  fb.textContent = '';
+
+  // If already answered, show the result visually
+  if(answered && statuses[current] !== 'pending') {
+    showAnswerVisual(statuses[current]);
+  }
+
+  updateStats();
+  updateSidebar();
+}
+
+function showAnswerVisual(status) {
+  const q = questions[current];
+  const container = document.getElementById('options-container');
+  const fb = document.getElementById('feedback-bar');
+
+  Array.from(container.querySelectorAll('.option-row')).forEach(row => {
+    const radio = row.querySelector('input');
+    radio.disabled = true;
+    const val = radio.value;
+    if(val === q.correct) {
+      row.className = 'option-row' + (status==='correct' ? ' correct' : ' reveal');
+      if(val === q.correct) radio.checked = (status==='correct');
+    }
+    if(status==='wrong' && val !== q.correct) {
+      // mark the wrong selected one
+    }
+  });
+
+  if(status==='correct') {
+    fb.className = 'ok';
+    fb.textContent = '✔ ¡Correcto!';
+  } else if(status==='wrong') {
+    fb.className = 'fail';
+    fb.textContent = `✘ Incorrecto. Respuesta correcta: ${q.correct}`;
+  } else if(status==='nocontest') {
+    fb.className = 'fail';
+    fb.textContent = `— No contestada. Respuesta correcta: ${q.correct}`;
+  } else if(status==='skip') {
+    fb.className = 'fail';
+    fb.textContent = '⏩ Pospuesta.';
+  }
+}
+
+function contestar() {
+  if(answered) { goNext(); return; }
+  if(selected === null) { alert('Seleccioná una opción para contestar.'); return; }
+
+  const q = questions[current];
+  answered = true;
+  const isCorrect = (selected === q.correct);
+
+  if(isCorrect) {
+    aciertos++;
+    statuses[current] = 'correct';
+    // mark correct
+    const container = document.getElementById('options-container');
+    container.querySelectorAll('.option-row').forEach(row => {
+      const radio = row.querySelector('input');
+      if(radio.value === selected) row.classList.add('correct');
+      radio.disabled = true;
+    });
+    const fb = document.getElementById('feedback-bar');
+    fb.className = 'ok';
+    fb.textContent = '✔ ¡Correcto!';
+  } else {
+    fallos++;
+    statuses[current] = 'wrong';
+    const container = document.getElementById('options-container');
+    container.querySelectorAll('.option-row').forEach(row => {
+      const radio = row.querySelector('input');
+      radio.disabled = true;
+      if(radio.value === selected) row.classList.add('wrong');
+      if(radio.value === q.correct) row.classList.add('reveal');
+    });
+    const fb = document.getElementById('feedback-bar');
+    fb.className = 'fail';
+    fb.textContent = `✘ Incorrecto. Respuesta correcta: ${q.correct}`;
+  }
+
+  updateStats();
+  updateSidebar();
+
+  // auto advance after short delay
+  setTimeout(() => {
+    if(checkAllDone()) { showResults(); return; }
+    goNext();
+  }, 1200);
+}
+
+function skipQuestion() {
+  if(!answered) statuses[current] = 'skip';
+  goNext();
+}
+
+function noContestar() {
+  if(answered) { goNext(); return; }
+  const q = questions[current];
+  answered = true;
+  statuses[current] = 'nocontest';
+  const container = document.getElementById('options-container');
+  container.querySelectorAll('.option-row').forEach(row => {
+    const radio = row.querySelector('input');
+    radio.disabled = true;
+    if(radio.value === q.correct) row.classList.add('reveal');
+  });
+  const fb = document.getElementById('feedback-bar');
+  fb.className = 'fail';
+  fb.textContent = `— No contestada. Respuesta correcta: ${q.correct}`;
+  updateSidebar();
+  setTimeout(() => {
+    if(checkAllDone()) { showResults(); return; }
+    goNext();
+  }, 1200);
+}
+
+function goNext() {
+  // find next pending or next in sequence
+  const total = questions.length;
+  let next = -1;
+  // first try next pending after current
+  for(let i=current+1;i<total;i++){
+    if(statuses[i]==='pending'||statuses[i]==='skip') { next=i; break; }
+  }
+  // if none found, wrap around
+  if(next===-1) {
+    for(let i=0;i<current;i++){
+      if(statuses[i]==='pending'||statuses[i]==='skip') { next=i; break; }
+    }
+  }
+  if(next===-1) {
+    showResults();
+    return;
+  }
+  current = next;
+  renderQuestion();
+}
+
+function jumpTo(i) {
+  current = i;
+  renderQuestion();
+}
+
+function checkAllDone() {
+  return statuses.every(s => s !== 'pending' && s !== 'skip');
+}
+
+function showResults() {
+  const total = questions.length;
+  const skip = statuses.filter(s=>s==='nocontest'||s==='skip').length;
+  const pct = Math.round((aciertos/total)*100);
+  let grade, cls;
+  if(pct>=90){grade='🏆 Excelente — ¡Dominás el tema!';cls='grade-A';}
+  else if(pct>=75){grade='✅ Muy bien — Sólido para el parcial';cls='grade-B';}
+  else if(pct>=60){grade='📚 Bien — Repasá los temas flojos';cls='grade-C';}
+  else{grade='⚠️ Necesitás más repaso antes del parcial';cls='grade-D';}
+
+  document.getElementById('r-total').textContent = total;
+  document.getElementById('r-ok').textContent = aciertos;
+  document.getElementById('r-fail').textContent = fallos;
+  document.getElementById('r-skip').textContent = skip;
+  document.getElementById('r-pct').textContent = pct+'%';
+  const gb = document.getElementById('grade-bar');
+  gb.textContent = grade;
+  gb.className = cls;
+  document.getElementById('results-screen').classList.add('show');
+}
+
+initQuiz();
+</script>
+</body>
+</html>
